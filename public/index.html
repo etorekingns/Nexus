@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nexus — Think Clearer. Move Faster.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050810;
+      --surface: #0c1120;
+      --accent: #00e5c0;
+      --accent2: #7b5ea7;
+      --accent3: #e05aff;
+      --text: #e8eaf0;
+      --muted: #6b7391;
+      --border: rgba(255,255,255,0.07);
+      --font-display: 'Playfair Display', serif;
+      --font-ui: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* CURSOR */
+    #cursor {
+      position: fixed;
+      width: 12px; height: 12px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.15s ease, opacity 0.2s;
+      transform: translate(-50%, -50%);
+    }
+    #cursor-ring {
+      position: fixed;
+      width: 36px; height: 36px;
+      border: 1px solid rgba(0,229,192,0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s, height 0.3s, border-color 0.3s;
+    }
+    body:hover #cursor { opacity: 1; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.4rem 3rem;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.4s, background 0.4s, backdrop-filter 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(5,8,16,0.85);
+      backdrop-filter: blur(18px);
+      border-color: var(--border);
+    }
+    .nav-logo {
+      font-family: var(--font-ui);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    .nav-links { display: flex; gap: 2.5rem; align-items: center; list-style: none; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .btn-nav {
+      background: var(--accent);
+      color: #050810 !important;
+      padding: 0.55rem 1.4rem;
+      border-radius: 2rem;
+      font-weight: 700 !important;
+      font-size: 0.75rem !important;
+      letter-spacing: 0.08em !important;
+      transition: opacity 0.2s, transform 0.2s !important;
+    }
+    .btn-nav:hover { opacity: 0.85; transform: scale(1.04) !important; }
+
+    /* HERO */
+    #hero {
+      position: relative;
+      height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      overflow: hidden;
+    }
+    #canvas-bg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 2rem;
+    }
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.3s forwards;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(3.2rem, 8vw, 7rem);
+      font-weight: 700;
+      line-height: 1.05;
+      max-width: 800px;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.55s forwards;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 500px;
+      line-height: 1.7;
+      font-weight: 400;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.8s forwards;
+    }
+    .btn-primary {
+      display: inline-block;
+      background: var(--accent);
+      color: #050810;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 1rem 2.5rem;
+      border-radius: 3rem;
+      border: none;
+      cursor: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 1s forwards;
+      box-shadow: 0 0 40px rgba(0,229,192,0.25);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 60px rgba(0,229,192,0.4);
+    }
+    .scroll-indicator {
+      position: absolute; bottom: 2.5rem; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      opacity: 0; animation: fadeIn 1s ease 1.8s forwards;
+    }
+    .scroll-indicator span {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .scroll-line {
+      width: 1px; height: 50px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+      animation: scrollPulse 2s ease infinite;
+    }
+
+    /* TICKER */
+    .ticker-wrap {
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 0;
+      background: rgba(0,229,192,0.03);
+    }
+    .ticker {
+      display: flex; gap: 4rem;
+      white-space: nowrap;
+      animation: ticker 30s linear infinite;
+    }
+    .ticker-item {
+      display: flex; align-items: center; gap: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .ticker-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+
+    /* SECTIONS */
+    section { padding: 8rem 3rem; max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      max-width: 80px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+    h2 em { font-style: italic; color: var(--accent3); }
+    .lead {
+      font-size: 1.1rem;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 540px;
+    }
+
+    /* PROBLEM SECTION */
+    #problem {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6rem; align-items: center;
+    }
+    .problem-cards { display: flex; flex-direction: column; gap: 1rem; }
+    .problem-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.4rem 1.8rem;
+      display: flex; align-items: flex-start; gap: 1rem;
+      transition: border-color 0.3s, transform 0.3s;
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    .problem-card.visible {
+      animation: slideIn 0.6s ease forwards;
+    }
+    .problem-card:hover { border-color: rgba(0,229,192,0.25); transform: translateX(4px); }
+    .problem-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .problem-card p { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+    .problem-card strong { color: var(--text); display: block; margin-bottom: 0.3rem; font-size: 0.95rem; }
+
+    /* SOLUTION */
+    #solution { text-align: center; }
+    #solution h2 { margin: 0 auto 1.5rem; }
+    #solution .lead { margin: 0 auto 4rem; }
+    .solution-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem; text-align: left;
+    }
+    .solution-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      position: relative; overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .solution-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .solution-card:hover { border-color: rgba(0,229,192,0.2); transform: translateY(-4px); }
+    .solution-card:hover::before { opacity: 1; }
+    .sol-num {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.2em;
+      margin-bottom: 1.2rem;
+    }
+    .solution-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .solution-card p { font-size: 0.875rem; color: var(--muted); line-height: 1.7; }
+
+    /* MISSION */
+    #mission {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      position: relative; overflow: hidden;
+      max-width: 100%;
+      padding: 8rem 3rem;
+    }
+    #mission::before {
+      content: '';
+      position: absolute; top: -50%; left: -10%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(123,94,167,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .mission-inner { max-width: 1200px; margin: 0 auto; }
+    .mission-quote {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 400;
+      font-style: italic;
+      line-height: 1.4;
+      max-width: 820px;
+      margin-bottom: 3rem;
+    }
+    .mission-quote span { color: var(--accent3); font-style: normal; font-weight: 700; }
+
+    /* TEAM */
+    #team { text-align: center; }
+    .team-carousel-wrap { position: relative; overflow: hidden; margin: 3rem 0; }
+    .team-track {
+      display: flex; gap: 1.5rem;
+      animation: teamScroll 20s linear infinite;
+      width: max-content;
+    }
+    .team-track:hover { animation-play-state: paused; }
+    .team-avatar {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      transition: border-color 0.3s;
+    }
+    .team-avatar:hover { border-color: var(--accent); }
+    .team-members {
+      display: flex; justify-content: center; gap: 3rem;
+      flex-wrap: wrap; margin-top: 3rem;
+    }
+    .team-card { text-align: center; max-width: 200px; }
+    .team-card-avatar {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      margin: 0 auto 1rem;
+      background: linear-gradient(135deg, var(--accent2), var(--accent3));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 2rem; font-weight: 700; color: #fff;
+      border: 2px solid var(--border);
+    }
+    .team-card h3 { font-size: 1rem; margin-bottom: 0.3rem; }
+    .team-card p { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.7rem; }
+    .team-links { display: flex; gap: 0.7rem; justify-content: center; }
+    .team-links a {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.6rem;
+      border-radius: 2rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .team-links a:hover { color: var(--accent); border-color: var(--accent); }
+    .hiring-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      max-width: 600px;
+      margin: 4rem auto 0;
+    }
+    .hiring-box h3 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      margin-bottom: 0.8rem;
+    }
+    .hiring-box p { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+    .hiring-box a { color: var(--accent); }
+
+    /* INVESTORS */
+    #investors { text-align: center; }
+    .investor-grid {
+      display: flex; flex-wrap: wrap;
+      justify-content: center; gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .investor-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3rem;
+      padding: 0.8rem 1.8rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      transition: border-color 0.3s, color 0.3s;
+    }
+    .investor-chip:hover { border-color: rgba(0,229,192,0.3); color: var(--text); }
+    .investor-chip strong { color: var(--text); display: block; font-size: 0.95rem; }
+
+    /* CTA */
+    #cta {
+      text-align: center;
+      background: radial-gradient(ellipse at center, rgba(0,229,192,0.07) 0%, transparent 70%);
+      border-top: 1px solid var(--border);
+      max-width: 100%;
+      padding: 8rem 3rem;
+    }
+    #cta h2 {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      max-width: 700px;
+      margin: 0 auto 1.5rem;
+    }
+    #cta p { color: var(--muted); margin-bottom: 3rem; font-size: 1rem; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 3rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1.5rem;
+    }
+    .footer-logo {
+      font-family: var(--font-ui); font-weight: 800;
+      letter-spacing: 0.12em; color: var(--accent);
+      text-transform: uppercase; font-size: 1rem;
+    }
+    .footer-links { display: flex; gap: 2rem; list-style: none; }
+    .footer-links a {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted); text-decoration: none;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-family: var(--font-mono);
+      font-size: 0.68rem; color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    @keyframes teamScroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      nav { padding: 1.2rem 1.5rem; }
+      .nav-links li:not(:last-child) { display: none; }
+      section { padding: 5rem 1.5rem; }
+      #problem { grid-template-columns: 1fr; gap: 3rem; }
+      .solution-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a class="nav-logo" href="#">Nexus</a>
+  <ul class="nav-links">
+    <li><a href="#problem">Vision</a></li>
+    <li><a href="#solution">Product</a></li>
+    <li><a href="#team">Team</a></li>
+    <li><a href="#" class="btn-nav">Early Access</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="canvas-bg"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Intelligence for your team · v0.9 beta</p>
+    <h1 class="hero-title">
+      Your team's knowledge,<br><em>instantly surfaced.</em>
+    </h1>
+    <p class="hero-sub">Nexus connects every tool your company uses and answers any question — instantly, with full context, zero noise.</p>
+    <a href="#" class="btn-primary">Request Early Access</a>
+  </div>
+  <div class="scroll-indicator">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span class="ticker-item"><span class="ticker-dot"></span>Semantic Search</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Real-time Sync</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Cross-platform Intelligence</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Zero Maintenance</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Enterprise Security</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Context-aware Answers</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Semantic Search</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Real-time Sync</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Cross-platform Intelligence</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Zero Maintenance</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Enterprise Security</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Context-aware Answers</span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="problem-text fade-up">
+    <div class="section-label">The Problem</div>
+    <h2>Knowledge shouldn't be <em>this hard</em> to find.</h2>
+    <p class="lead">Every team creates mountains of valuable knowledge. Almost none of it gets used. It's buried, scattered, and forgotten.</p>
+  </div>
+  <div class="problem-cards" id="problem-cards">
+    <div class="problem-card fade-up">
+      <div class="problem-icon">⚡</div>
+      <div>
+        <strong>Fragmented across 20+ tools</strong>
+        <p>Slack, Notion, Jira, Confluence, email, Drive — critical context lives everywhere and nowhere.</p>
+      </div>
+    </div>
+    <div class="problem-card fade-up" style="transition-delay:0.1s">
+      <div class="problem-icon">⏳</div>
+      <div>
+        <strong>30% of your day is lost searching</strong>
+        <p>Hours vanish hunting for files, asking colleagues who already answered this last month.</p>
+      </div>
+    </div>
+    <div class="problem-card fade-up" style="transition-delay:0.2s">
+      <div class="problem-icon">🔄</div>
+      <div>
+        <strong>Wikis decay the moment they're written</strong>
+        <p>Every static knowledge base becomes a graveyard. No one updates it. No one trusts it.</p>
+      </div>
+    </div>
+    <div class="problem-card fade-up" style="transition-delay:0.3s">
+      <div class="problem-icon">😮‍💨</div>
+      <div>
+        <strong>Decisions made with incomplete context</strong>
+        <p>Without the full picture, even smart teams make slow, uncertain, costly decisions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section id="solution">
+  <div class="fade-up">
+    <div class="section-label">The Solution</div>
+    <h2>One place to <em>know everything.</em></h2>
+    <p class="lead">Nexus learns your organisation continuously. Ask anything — get a real answer with sources, in seconds.</p>
+  </div>
+  <div class="solution-grid" style="margin-top:4rem">
+    <div class="solution-card fade-up">
+      <p class="sol-num">01 — Connect</p>
+      <h3>Plug in everything</h3>
+      <p>Link Slack, Notion, GitHub, Linear, Gmail, Drive and more in minutes. Nexus indexes all of it, silently, in real time.</p>
+    </div>
+    <div class="solution-card fade-up" style="transition-delay:0.1s">
+      <p class="sol-num">02 — Ask</p>
+      <h3>Ask in plain language</h3>
+      <p>"What did we decide about pricing last quarter?" Get a direct, cited answer — not a list of links to skim through.</p>
+    </div>
+    <div class="solution-card fade-up" style="transition-delay:0.2s">
+      <p class="sol-num">03 — Flow</p>
+      <h3>Stay in your flow</h3>
+      <p>Nexus lives where you work — inside Slack, your browser, or your IDE. Zero tab-switching, zero friction.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MISSION -->
+<div id="mission">
+  <div class="mission-inner fade-up">
+    <div class="section-label">Our Mission</div>
+    <p class="mission-quote">
+      We believe the best moments at work happen when you're in <span>flow</span> — when you have exactly what you need, exactly when you need it. Nexus is built to make that the default, not the exception.
+    </p>
+    <p class="lead">We're rebuilding institutional memory from scratch — real-time, trustworthy, and effortlessly maintained.</p>
+  </div>
+</div>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="fade-up">
+    <div class="section-label" style="justify-content:center">The Team</div>
+    <h2>Built by obsessives.</h2>
+    <p class="lead" style="margin:0 auto">We've lived these problems firsthand — in startups, in scaleups, in enterprises. We're building the tool we always wished existed.</p>
+  </div>
+
+  <div class="team-carousel-wrap">
+    <div class="team-track" id="teamTrack">
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+      <!-- duplicate for infinite -->
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+      <div class="team-avatar">M</div>
+      <div class="team-avatar">S</div>
+      <div class="team-avatar">R</div>
+    </div>
+  </div>
+
+  <div class="team-members fade-up">
+    <div class="team-card">
+      <div class="team-card-avatar">M</div>
+      <h3>Marina Sousa</h3>
+      <p>Co-Founder & CEO</p>
+      <div class="team-links">
+        <a href="#">Twitter</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-card-avatar" style="background:linear-gradient(135deg,#00e5c0,#0070ff)">S</div>
+      <h3>Samuel Park</h3>
+      <p>Co-Founder & CTO</p>
+      <div class="team-links">
+        <a href="#">Twitter</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="team-card-avatar" style="background:linear-gradient(135deg,#e05aff,#7b5ea7)">R</div>
+      <h3>Rafaela Mendes</h3>
+      <p>Head of Product Design</p>
+      <div class="team-links">
+        <a href="#">Twitter</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="hiring-box fade-up">
+    <h3>Come build with us.</h3>
+    <p>We're hiring thoughtful, curious people who care deeply about craft. If that's you, send your portfolio or CV to <a href="mailto:hello@nexus.ai">hello@nexus.ai</a> with a note about what excites you about this problem.</p>
+  </div>
+</section>
+
+<!-- INVESTORS -->
+<section id="investors">
+  <div class="fade-up">
+    <div class="section-label" style="justify-content:center">Backers</div>
+    <h2>Supported by the best.</h2>
+    <p class="lead" style="margin:0 auto">We're backed by pioneering operators and progressive funds who understand what the future of work needs to look like.</p>
+  </div>
+  <div class="investor-grid fade-up">
+    <div class="investor-chip"><strong>Horizon VC</strong>Early-stage fund</div>
+    <div class="investor-chip"><strong>André Lima</strong>Co-founder of WorkOS</div>
+    <div class="investor-chip"><strong>Tangent Fund</strong>Community-led growth</div>
+    <div class="investor-chip"><strong>Vela Ventures</strong>Enterprise SaaS specialist</div>
+    <div class="investor-chip"><strong>Clara Ribeiro</strong>Former CPO at Lever</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div id="cta">
+  <div class="fade-up">
+    <div class="section-label" style="justify-content:center">Get Started</div>
+    <h2>Your team's answers are already <em>out there.</em></h2>
+    <p>Stop losing them. Join the waitlist today.</p>
+    <a href="#" class="btn-primary">Request Early Access</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Nexus</div>
+  <ul class="footer-links">
+    <li><a href="#problem">Vision</a></li>
+    <li><a href="#solution">Product</a></li>
+    <li><a href="#team">Team</a></li>
+    <li><a href="#">Privacy</a></li>
+    <li><a href="#">Terms</a></li>
+  </ul>
+  <p class="footer-copy">© 2025 Nexus Technologies. All rights reserved.</p>
+</footer>
+
+<!-- THREE.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── CURSOR ──────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+});
+function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  cursorRing.style.left = rx + 'px';
+  cursorRing.style.top = ry + 'px';
+  requestAnimationFrame(animRing);
+}
+animRing();
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursorRing.style.width = '56px';
+    cursorRing.style.height = '56px';
+    cursorRing.style.borderColor = 'rgba(0,229,192,0.8)';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursorRing.style.width = '36px';
+    cursorRing.style.height = '36px';
+    cursorRing.style.borderColor = 'rgba(0,229,192,0.4)';
+  });
+});
+
+// ── NAV ──────────────────────────────────────────────────
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// ── SCROLL REVEAL ────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+// ── THREE.JS HERO BACKGROUND ─────────────────────────────
+(function() {
+  const canvas = document.getElementById('canvas-bg');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.z = 4;
+
+  // Particle field
+  const count = 3000;
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    positions[i * 3]     = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+
+    const r = Math.random();
+    if (r < 0.5) {
+      colors[i * 3] = 0; colors[i * 3 + 1] = 0.9; colors[i * 3 + 2] = 0.75; // teal
+    } else if (r < 0.8) {
+      colors[i * 3] = 0.48; colors[i * 3 + 1] = 0.37; colors[i * 3 + 2] = 0.65; // purple
+    } else {
+      colors[i * 3] = 0.88; colors[i * 3 + 1] = 0.35; colors[i * 3 + 2] = 1; // violet
+    }
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const mat = new THREE.PointsMaterial({
+    size: 0.018,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.7,
+    sizeAttenuation: true
+  });
+  const particles = new THREE.Points(geo, mat);
+  scene.add(particles);
+
+  // Grid mesh
+  const gridGeo = new THREE.PlaneGeometry(20, 20, 28, 28);
+  const gridMat = new THREE.MeshBasicMaterial({
+    color: 0x00e5c0,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.04
+  });
+  const grid = new THREE.Mesh(gridGeo, gridMat);
+  grid.rotation.x = -Math.PI / 3;
+  grid.position.y = -2.5;
+  scene.add(grid);
+
+  // Floating torus
+  const torusGeo = new THREE.TorusGeometry(1.5, 0.008, 12, 80);
+  const torusMat = new THREE.MeshBasicMaterial({ color: 0x00e5c0, transparent: true, opacity: 0.15 });
+  const torus = new THREE.Mesh(torusGeo, torusMat);
+  torus.rotation.x = Math.PI / 5;
+  scene.add(torus);
+
+  const torus2 = new THREE.Mesh(
+    new THREE.TorusGeometry(2.2, 0.005, 12, 80),
+    new THREE.MeshBasicMaterial({ color: 0xe05aff, transparent: true, opacity: 0.1 })
+  );
+  torus2.rotation.x = -Math.PI / 4;
+  torus2.rotation.y = Math.PI / 6;
+  scene.add(torus2);
+
+  let mx2 = 0, my2 = 0;
+  document.addEventListener('mousemove', e => {
+    mx2 = (e.clientX / window.innerWidth - 0.5) * 2;
+    my2 = -(e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.005;
+    particles.rotation.y += 0.0007;
+    particles.rotation.x += 0.0003;
+    torus.rotation.z = t * 0.3;
+    torus.rotation.y = mx2 * 0.3;
+    torus2.rotation.z = -t * 0.2;
+    torus2.rotation.x = -Math.PI / 4 + my2 * 0.15;
+    camera.position.x += (mx2 * 0.4 - camera.position.x) * 0.03;
+    camera.position.y += (my2 * 0.3 - camera.position.y) * 0.03;
+    camera.lookAt(scene.position);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+</script>
+</body>
+</html>
